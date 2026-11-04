@@ -1,27 +1,11 @@
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
+const connectDB = require("./conn");
 
-const app = express();
-
-const PORT = process.env.PORT || 4000;
-require("./conn");
-
-app.use(express.json());
-
-app.use(
-  cors({
-    credentials: true,
-    origin: process.env.FRONTEND_URL,
-  }),
-);
-
-const UserRoutes = require("./Routes/user");
-const ResumeRoutes = require("./Routes/resume");
-
-app.use("/api/user", UserRoutes);
-app.use("/api/resume", ResumeRoutes);
-
-app.listen(PORT, () => console.log("our backend is running ", PORT));
-
-module.exports = app;
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error("MongoDB connection failed:", error);
+    res.status(500).json({ error: "Database connection failed", details: error.message });
+  }
+});

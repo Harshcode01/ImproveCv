@@ -1,10 +1,35 @@
 const mongoose = require("mongoose");
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then((res) => {
-    console.log("database connected successfully!");
-  })
-  .catch((err) => {
-    console.log("something error,", err);
-  });
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+const connectDB = async () => {
+  if (cached.conn) {
+    return cached.conn;
+  }
+
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false, // Fails fast instead of hanging 10s if the DB is unreachable
+    };
+
+    cached.promise = mongoose.connect(process.env.MONGO_URI, opts).then((mongooseInstance) => {
+      console.log("Connected to MongoDB Atlas");
+      return mongooseInstance;
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
+  }
+
+  return cached.conn;
+};
+
+module.exports = connectDB;
